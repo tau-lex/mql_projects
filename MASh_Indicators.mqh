@@ -21,24 +21,25 @@
 //|   F U N C T I O N S                                                       |
 //+---------------------------------------------------------------------------+
 enum INDICATOR_TYPE {
-    None                = 0,
-    Custom              = 10,
-    BouncedMA           = 11,
-    BouncedMA_FilterM   = 12,
-    BouncedMA_FilterP   = 13,
-    Sampler             = 18,
-    Impulse             = 20,
-    // AdaptiveMA          = 21,
-    MACD_Histogram      = 22,
-    Wave                = 23,
-    // WaveCCI             = 24,
-    // ThreeScreens_1_0    = 100,
-    // ThreeScreens_1_1    = 110,
-    ThreeScreens_1_2    = 120,
-    // ThreeScreens_1_2_1  = 121,
-    ThreeScreens_1_2_2  = 122,
-    // ThreeScreens_1_3    = 130,
-    ThreeScreens_2_0    = 200
+    None                        = 0,
+    Custom                      = 10,
+    BouncedMA                   = 11,
+    BouncedMA_FilterM           = 12,
+    BouncedMA_FilterP           = 13,
+    Percentage_Increments       = 14, 
+    Sampler                     = 18,
+    Impulse                     = 20,
+    // AdaptiveMA               = 21,
+    MACD_Histogram              = 22,
+    Wave                        = 23,
+    // WaveCCI                  = 24,
+    // ThreeScreens_1_0         = 100,
+    // ThreeScreens_1_1         = 110,
+    // ThreeScreens_1_2         = 120,
+    // ThreeScreens_1_2_1       = 121,
+    // ThreeScreens_1_2_2       = 122,
+    // ThreeScreens_1_3         = 130,
+    // ThreeScreens_2_0         = 200
 };
 
 enum TS_TYPE {
@@ -59,6 +60,7 @@ string GetIndicatorString(const int type)
         case BouncedMA:             return "BouncedMA (by Terentyev Aleksey, 2017-2018)";
         case BouncedMA_FilterM:     return "BouncedMA (by Terentyev Aleksey, 2017-2018)";
         case BouncedMA_FilterP:     return "BouncedMA (by Terentyev Aleksey, 2017-2018)";
+        case Percentage_Increments: return "Percentage Increments to Classes";
         case Sampler:               return "Sampler (by her.human@gmail.com, 2012-2016)";
         case Impulse:               return "Impulse System (by Alexander Elder)";
         // case AdaptiveMA:            return "AdaptiveMA";
@@ -67,11 +69,11 @@ string GetIndicatorString(const int type)
         // case WaveCCI:               return "Wave+CCI";
         // case ThreeScreens_1_0:      return "ThreeScreens v1.0";
         // case ThreeScreens_1_1:      return "ThreeScreens v1.1";
-        case ThreeScreens_1_2:      return "ThreeScreens v1.2";
+        // case ThreeScreens_1_2:      return "ThreeScreens v1.2";
         // case ThreeScreens_1_2_1:    return "ThreeScreens v1.2.1 beta";
-        case ThreeScreens_1_2_2:    return "ThreeScreens v1.2.2 beta";
+        // case ThreeScreens_1_2_2:    return "ThreeScreens v1.2.2 beta";
         // case ThreeScreens_1_3:      return "ThreeScreens v1.3 beta";
-        case ThreeScreens_2_0:      return "ThreeScreens v2.0 alpha";
+        // case ThreeScreens_2_0:      return "ThreeScreens v2.0 alpha";
         default:                    return NULL;
     }
 };
@@ -369,6 +371,73 @@ double iBouncedMAFilteredP(const int bar,
         return bounce;
     } else if( bounceP < 0 && bounce < 0 ) {
         return bounce;
+    }
+    return 0.0;
+};
+
+double iPercentageIncrements(const int bar, 
+                             const string symbol = NULL, const int period = PERIOD_CURRENT)
+{
+    if( bar >= Bars-1 ) {
+        return 0.0;
+    }
+    static bool firstRun = true;
+    static double _points[5];
+    double _buffer;
+    if( firstRun ) {
+        firstRun = false;
+        int distribution[2001], sum = 0, p_idx, one;
+        ArrayInitialize(distribution, 0);
+        // сохраним распределение в массив и посчитаем сумму
+        for(int idx = Bars-2; idx >= 1; idx--) {
+            _buffer = iClose(symbol, period, idx) / iClose(symbol, period, idx+1);
+            int d_idx = (int)MathRound((_buffer - 1) * MathPow(10, 4) + 1000);
+            if( d_idx < 0 ) d_idx = 0; // < -0.0001
+            if( d_idx > 2000 ) d_idx = 2000; // > 0.0001
+            distribution[d_idx] += 1;
+            sum += 1;
+        }
+        double sixth = sum/6;
+        _points[2] = 1;
+        // равномерно разделим отрицательную часть
+        sum = 0; p_idx = 1; one = 1;
+        for(int idx = 999; idx >= 0; idx--) {
+            sum += distribution[idx];
+            if( sum >= sixth*one ) {
+                _points[p_idx--] = (idx - 1000) / MathPow(10, 4) + 1;
+                one++;
+            }
+            if( p_idx < 0 ) break;
+        }
+        // равномерно разделим положительную часть
+        sum = 0; p_idx = 3; one = 1;
+        for(int idx = 1001; idx <= 2000; idx++) {
+            sum += distribution[idx];
+            if( sum >= sixth*one ) {
+                _points[p_idx++] = (idx - 1000) / MathPow(10, 4) + 1;
+                one++;
+            }
+            if( p_idx > 4 ) break;
+        }
+        Print(_points[0], ", ", _points[1], " | ", _points[2], " | ", _points[3], ", ", _points[4]);
+    }
+    _buffer = iClose(symbol, period, bar) / iClose(symbol, period, bar+1);
+    if( _buffer - _points[2] >= 0 ) {
+        if( _buffer - _points[4] >= 0 ) {
+            return 1.0;
+        } else if( _buffer - _points[3] >= 0 ) {
+            return 0.66;
+        } else {
+            return 0.33;
+        }
+    } else {
+        if( _buffer - _points[0] <= 0 ) {
+            return -1.0;
+        } else if( _buffer - _points[1] <= 0 ) {
+            return -0.66;
+        } else {
+            return -0.33;
+        }
     }
     return 0.0;
 };

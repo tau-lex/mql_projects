@@ -116,8 +116,8 @@ input BOOL              ON_USDX = Disable;                  // USD index (USDX)
 input BOOL              ON_EURX = Disable;                  // EUR index (EURX)
 
 input string            SECTION3 = "___ S I G N A L   F O R   T A R G E T ___"; //.
-input INDICATOR_TYPE    INDICATOR = BouncedMA_FilterP;      // Indicator for prediction
-input int               EMA_D1 = 3;                         // EMA or Period
+input INDICATOR_TYPE    INDICATOR = BouncedMA_FilterM;      // Indicator for prediction
+input int               EMA_D1 = 5;                         // EMA or Period
 input int               MACD_FAST = 12;                     // MACD Fast
 input int               MACD_SLOW = 26;                     // MACD Slow
 input int               MACD_SIGNAL = 9;                    // MACD Signal
@@ -246,7 +246,9 @@ int OnCalculate(const int rates_total,
     }
     for( int idx = limit-1; idx >= 0; idx-- ) { // Main cycle
         double signal = 0.0;
-        if( INDICATOR == BouncedMA ) {
+        if( INDICATOR == Percentage_Increments ) {
+            signal = iPercentageIncrements(idx, Symbol(), Period());
+        } else if( INDICATOR == BouncedMA ) {
             signal = iBouncedMA(idx, Symbol(), Period(), MODE_EMA);
         } else if( INDICATOR == BouncedMA_FilterM ) {
             signal = iBouncedMAFilteredM(idx, Symbol(), Period(), MODE_EMA, 2, EMA_D1);
@@ -262,8 +264,6 @@ int OnCalculate(const int rates_total,
             signal = iWave(idx, Symbol(), Period(), EMA_D1);
         } else if( INDICATOR == MACD_Histogram ) {
             signal = iMACDHist(Symbol(), Period(), MACD_FAST, MACD_SLOW, MACD_SIGNAL, PRICE_CLOSE, MODE_EMA, idx);
-        } else if( INDICATOR >= 100 ) { // TS
-            signal = iThreeScreens(idx, Symbol(), Period(), EMA_D1, MACD_FAST, MACD_SLOW, MACD_SIGNAL, INDICATOR);
         }
         SignalP_Buffer[idx] = 0.0;
         SignalN_Buffer[idx] = 0.0;
