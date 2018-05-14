@@ -15,8 +15,7 @@
 #property description   "Sampler \t\t= 10 (Period)"
 #property description   "Impulse \t\t\t= 13 or 26 (EMA), 12, 26, 9 (MACD)"
 #property description   "Wave \t\t\t= 34 (EMA)"
-#property description   "ThreeScreens \t\t= 26 (EMA), 12, 26, 9 (MACD)"
-#property version       "1.22"
+#property version       "1.22.1"
 #property icon          "ico/ml-assistant.ico";
 #property strict
 
