@@ -1,6 +1,0 @@
-[submodule "vendor/Log4mql"]
-	path = vendor/Log4mql
-	url = https://github.com/mql4j/Log4mql.git
-[submodule "vendor/Py36MT5"]
-	path = vendor/Py36MT5
-url=git@github.com:terentjew-alexey/Py36MT5.git

@@ -110,7 +110,7 @@ double Convert(const double value, const string origin, const string target)
     if( origin == target || origin == "" || target == "" ) {
         return value;
     }
-    const string prefx = StringSubstr( Symbol(), 6 );
+    const string prefx = StringSubstr(Symbol(), 6);
     string symbol1 = origin + target + prefx;
     string symbol2 = target + origin + prefx;
     if( MarketInfo(symbol1, MODE_BID) > 0.0 ) {
